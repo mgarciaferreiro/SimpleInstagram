@@ -35,6 +35,8 @@ public class MainActivity extends AppCompatActivity {
         final Fragment homeFragment = new PostsFragment();
         final Fragment profileFragment = new ProfileFragment();
 
+        fragmentManager.beginTransaction().replace(R.id.flContainer, homeFragment).commit();
+
         bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
@@ -49,7 +51,6 @@ public class MainActivity extends AppCompatActivity {
                         fragmentManager.beginTransaction().replace(R.id.flContainer, profileFragment).commit();
                         return true;
                     default:
-                        fragmentManager.beginTransaction().replace(R.id.flContainer, homeFragment).commit();
                         return true;
                 }
             }

@@ -14,6 +14,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -39,6 +40,7 @@ public class ComposeFragment extends Fragment {
     private Button takePictureButton;
     private ImageView imageView;
     BottomNavigationView bottomNavigationView;
+    ProgressBar pb;
 
     private final String TAG = "ComposeFragment";
 
@@ -61,6 +63,7 @@ public class ComposeFragment extends Fragment {
         takePictureButton = view.findViewById(R.id.takePictureButton);
         imageView = view.findViewById(R.id.imageView);
         bottomNavigationView = view.findViewById(R.id.bottom_navigation);
+        pb = view.findViewById(R.id.pbLoading);
 
         createButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -72,6 +75,7 @@ public class ComposeFragment extends Fragment {
                     Log.e(TAG, "No photo to post");
                     return;
                 }
+                pb.setVisibility(ProgressBar.VISIBLE);
                 createPost(description, photoFile, user);
             }
         });
@@ -95,7 +99,7 @@ public class ComposeFragment extends Fragment {
                 imageView.setImageBitmap(takenImage);
 
             } else { // Result was a failure
-                Log.e(TAG, "Picture wasn't taken!");
+                Log.e(TAG, "Picture wasn't taken");
             }
         }
     }
@@ -132,6 +136,7 @@ public class ComposeFragment extends Fragment {
                     Log.d("MainActivity", "Create post success");
                     descriptionInput.setText("");
                     imageView.setImageResource(0);
+                    pb.setVisibility(ProgressBar.INVISIBLE);
                 } else {
                     Log.d("MainActivity", "Create post failure");
                     e.printStackTrace();
