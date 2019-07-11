@@ -8,16 +8,18 @@ import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
 
+import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
 @ParseClassName("Post")
-public class Post extends ParseObject {
+public class Post extends ParseObject implements Serializable {
     public static final String KEY_DESCRIPTION = "description";
     public static final String KEY_IMAGE = "image";
     public static final String KEY_USER = "user";
     public static final String KEY_CREATED_AT = "createdAt";
+    public static final String KEY_LIKE_COUNT = "likeCount";
 
     public String getDescription() {
         return getString(KEY_DESCRIPTION);
@@ -31,9 +33,7 @@ public class Post extends ParseObject {
         return getParseFile(KEY_IMAGE);
     }
 
-    public void setImage(ParseFile image) {
-        put(KEY_IMAGE, image);
-    }
+    public void setImage(ParseFile image) { put(KEY_IMAGE, image); }
 
     public ParseUser getUser() {
         return getParseUser(KEY_USER);
@@ -45,13 +45,20 @@ public class Post extends ParseObject {
 
     public String getTimestamp() { return getRelativeTimeAgo(getCreatedAt().toString()); }
 
+    public Number getLikeCount() { return getNumber(KEY_LIKE_COUNT); }
+
+    public void setLikeCount(Number likeCount) {
+        put(KEY_LIKE_COUNT, likeCount);
+    }
+
     public static class Query extends ParseQuery {
         public Query() {
             super(Post.class);
         }
 
         public Query getTop() {
-            setLimit(20);
+            setLimit(5);
+            addDescendingOrder(KEY_CREATED_AT);
             return this;
         }
 
@@ -59,10 +66,17 @@ public class Post extends ParseObject {
             include("user");
             return this;
         }
+
+        public Query profileQuery(ParseUser user) {
+            setLimit(20);
+            addDescendingOrder(KEY_CREATED_AT);
+            whereEqualTo(KEY_USER, user);
+            return this;
+        }
     }
 
     // "Tue Jul 09 17:22:36 PDT 2019"
-    public String getRelativeTimeAgo(String rawDate) {
+    public static String getRelativeTimeAgo(String rawDate) {
         String parseFormat = "EEE MMM dd HH:mm:ss zzz yyyy";
         SimpleDateFormat sf = new SimpleDateFormat(parseFormat, Locale.ENGLISH);
         sf.setLenient(true);

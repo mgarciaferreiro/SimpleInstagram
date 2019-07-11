@@ -13,20 +13,19 @@ import com.example.simpleinstagram.fragments.PostsFragment;
 import com.example.simpleinstagram.fragments.ProfileFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
-import java.io.File;
-
 public class MainActivity extends AppCompatActivity {
 
     BottomNavigationView bottomNavigationView;
-
-    public final static int CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE = 1034;
-    public String photoFileName = "photo.jpg";
-    private File photoFile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        getSupportActionBar().setLogo(R.drawable.nav_logo_whiteout);
+        getSupportActionBar().setDisplayUseLogoEnabled(true);
+        getSupportActionBar().setDisplayShowHomeEnabled(true);
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
 
         bottomNavigationView = findViewById(R.id.bottom_navigation);
 

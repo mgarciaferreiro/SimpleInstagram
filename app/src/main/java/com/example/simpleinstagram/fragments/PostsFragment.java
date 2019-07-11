@@ -1,7 +1,6 @@
 package com.example.simpleinstagram.fragments;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,6 +8,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import jp.wasabeef.recyclerview.animators.SlideInUpAnimator;
 import model.Post;
 
 public class PostsFragment extends Fragment {
@@ -47,9 +48,12 @@ public class PostsFragment extends Fragment {
         rvPosts = view.findViewById(R.id.rvPosts);
         mPosts = new ArrayList<>();
         adapter = new PostsAdapter(getContext(), mPosts);
+        RecyclerView.ItemDecoration itemDecoration = new DividerItemDecoration(getContext(), DividerItemDecoration.VERTICAL);
+        rvPosts.addItemDecoration(itemDecoration);
+        rvPosts.setItemAnimator(new SlideInUpAnimator());
         rvPosts.setAdapter(adapter);
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getContext());
-        rvPosts.setLayoutManager(new LinearLayoutManager(getContext()));
+        rvPosts.setLayoutManager(linearLayoutManager);
 
         scrollListener = new EndlessRecyclerViewScrollListener(linearLayoutManager) {
             @Override
@@ -65,6 +69,7 @@ public class PostsFragment extends Fragment {
         swipeContainer.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
+                adapter.clear();
                 queryPosts(true);
             }
         });
@@ -78,29 +83,24 @@ public class PostsFragment extends Fragment {
     }
 
     private void queryPosts(final boolean isFirstLoad) {
-        Date lastDate = new Date();
+        final Post.Query postQuery = new Post.Query();
+        Date lastDate;
         if (!isFirstLoad) {
             Post lastPost = mPosts.get(mPosts.size() - 1);
             lastDate = lastPost.getCreatedAt();
+            postQuery.whereLessThan("createdAt", lastDate);
         }
-        final Post.Query postQuery = new Post.Query();
-        postQuery.getTop().withUser();
-        //postQuery.setLimit(20);
-        postQuery.whereLessThanOrEqualTo("createdAt", lastDate);
-        postQuery.addDescendingOrder(Post.KEY_CREATED_AT);
+        postQuery.getTop();
+        postQuery.withUser();
         postQuery.findInBackground(new FindCallback<Post>() {
             @Override
             public void done(List<Post> objects, ParseException e) {
                 if (e == null) {
-                    if (isFirstLoad) {
-                        adapter.clear();
+                    for(int i = 0; i < objects.size(); i++) {
+                        Post post = objects.get(i);
+                        mPosts.add(post);
+                        adapter.notifyItemInserted(mPosts.size() - 1);
                     }
-                    for (int i = 0; i < objects.size(); i++) {
-                        Log.d(TAG, "Post[" + i + "] = "
-                                + objects.get(i).getDescription()
-                                + "\nusername = " + objects.get(i).getUser().getUsername());
-                    }
-                    adapter.addAll(objects);
                     swipeContainer.setRefreshing(false);
                 } else {
                     e.printStackTrace();
