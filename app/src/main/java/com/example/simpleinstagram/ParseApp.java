@@ -6,6 +6,7 @@ import com.parse.Parse;
 import com.parse.ParseObject;
 
 import model.InstaComment;
+import model.Like;
 import model.Post;
 
 public class ParseApp extends Application {
@@ -15,6 +16,7 @@ public class ParseApp extends Application {
 
         ParseObject.registerSubclass(Post.class);
         ParseObject.registerSubclass(InstaComment.class);
+        ParseObject.registerSubclass(Like.class);
 
         final Parse.Configuration configuration = new Parse.Configuration.Builder(this)
                 .applicationId("simpleInstagramId")

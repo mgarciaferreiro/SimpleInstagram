@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CenterCrop;
@@ -47,6 +48,7 @@ public class DetailActivity extends AppCompatActivity {
     private CommentsAdapter adapter;
     private List<InstaComment> comments;
     private Post post;
+    private SwipeRefreshLayout swipeContainer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,12 +103,28 @@ public class DetailActivity extends AppCompatActivity {
         tvUser.setText(user.getUsername());
         timestamp.setText(post.getTimestamp());
 
+        swipeContainer = findViewById(R.id.swipeContainer);
+        swipeContainer.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                queryComments();
+            }
+        });
+        // Configure the refreshing colors
+        swipeContainer.setColorSchemeResources(android.R.color.holo_blue_bright,
+                android.R.color.holo_green_light,
+                android.R.color.holo_orange_light,
+                android.R.color.holo_red_light);
+
         queryComments();
 
         commentButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String text = etComment.getText().toString();
+                if (text.equals("")) {
+                    return;
+                }
                 InstaComment comment = new InstaComment();
                 comment.setText(text);
                 comment.setUser(user);
@@ -116,6 +134,7 @@ public class DetailActivity extends AppCompatActivity {
                     public void done(ParseException e) {
                         if(e == null) {
                             Log.i("DetailActivity", "Created comment");
+                            adapter.notifyDataSetChanged();
                             queryComments();
                         } else {
                             Log.e("DetailActivity", "Failed to save comment", e);
@@ -135,8 +154,10 @@ public class DetailActivity extends AppCompatActivity {
             @Override
             public void done(List<InstaComment> objects, ParseException e) {
                 if (e == null) {
+                    adapter.clear();
                     adapter.addAll(objects);
                     adapter.notifyDataSetChanged();
+                    swipeContainer.setRefreshing(false);
                 } else {
                     e.printStackTrace();
                 }

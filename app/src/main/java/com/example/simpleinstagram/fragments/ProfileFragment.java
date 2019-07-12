@@ -85,16 +85,14 @@ public class ProfileFragment extends Fragment {
             Post post = (Post) bundle.getSerializable("post");
             user = post.getUser();
             logoutButton.setVisibility(View.GONE);
-
+        } else {
+            user = ParseUser.getCurrentUser();
             ivProfile.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     launchCamera();
                 }
             });
-
-        } else {
-            user = ParseUser.getCurrentUser();
         }
 
         tvUsername.setText(user.getUsername());

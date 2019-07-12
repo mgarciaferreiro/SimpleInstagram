@@ -3,6 +3,7 @@ package com.example.simpleinstagram.fragments;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -28,7 +29,9 @@ import com.parse.ParseFile;
 import com.parse.ParseUser;
 import com.parse.SaveCallback;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 
 import model.Post;
 
@@ -38,11 +41,13 @@ public class ComposeFragment extends Fragment {
     private EditText descriptionInput;
     private Button createButton;
     private Button takePictureButton;
+    private Button uploadButton;
     private ImageView imageView;
     BottomNavigationView bottomNavigationView;
     ProgressBar pb;
 
     private final String TAG = "ComposeFragment";
+    public final static int PICK_PHOTO_CODE = 1046;
 
     public String photoFileName = "photo.jpg";
     private File photoFile;
@@ -60,6 +65,7 @@ public class ComposeFragment extends Fragment {
         descriptionInput = view.findViewById(R.id.descriptionInput);
         createButton = view.findViewById(R.id.createButton);
         takePictureButton = view.findViewById(R.id.takePictureButton);
+        uploadButton = view.findViewById(R.id.uploadButton);
         imageView = view.findViewById(R.id.imageView);
         bottomNavigationView = view.findViewById(R.id.bottom_navigation);
         pb = view.findViewById(R.id.pbLoading);
@@ -69,18 +75,25 @@ public class ComposeFragment extends Fragment {
             public void onClick(View view) {
                 final String description = descriptionInput.getText().toString();
                 final ParseUser user = ParseUser.getCurrentUser();
-                if (photoFile == null || imageView.getDrawable() == null) {
+                if (imageView.getDrawable() == null) {
                     Log.e(TAG, "No photo to post");
                     return;
                 }
+                Bitmap imageBitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
                 pb.setVisibility(ProgressBar.VISIBLE);
-                createPost(description, photoFile, user);
+                createPost(description, getParseFile(imageBitmap), user);
             }
         });
         takePictureButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 launchCamera();
+            }
+        });
+        uploadButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onPickPhoto();
             }
         });
     }
@@ -94,6 +107,16 @@ public class ComposeFragment extends Fragment {
             } else {
                 Log.e(TAG, "Picture wasn't taken");
             }
+        } else if (requestCode == PICK_PHOTO_CODE && data != null) {
+            Uri photoUri = data.getData();
+            Bitmap selectedImage = null;
+            try {
+                selectedImage = MediaStore.Images.Media.getBitmap(getContext().getContentResolver(), photoUri);
+                photoFile = new File(photoUri.getPath());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            imageView.setImageBitmap(selectedImage);
         }
     }
 
@@ -117,12 +140,25 @@ public class ComposeFragment extends Fragment {
         }
     }
 
-    private void createPost(String description, File imageFile, ParseUser user) {
-        Post post = new Post();
+    // Trigger gallery selection for a photo
+    public void onPickPhoto() {
+        // Create intent for picking a photo from the gallery
+        Intent intent = new Intent(Intent.ACTION_PICK,
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+
+        // If you call startActivityForResult() using an intent that no app can handle, your app will crash.
+        // So as long as the result is not null, it's safe to use the intent.
+        if (intent.resolveActivity(getContext().getPackageManager()) != null) {
+            // Bring up gallery to select a photo
+            startActivityForResult(intent, PICK_PHOTO_CODE);
+        }
+    }
+
+    private void createPost(String description, ParseFile imageFile, ParseUser user) {
+        final Post post = new Post();
         post.setDescription(description);
-        post.setImage(new ParseFile(imageFile));
+        post.setImage(imageFile);
         post.setUser(user);
-        post.setLikeCount(0);
         post.saveInBackground(new SaveCallback() {
             @Override
             public void done(ParseException e) {
@@ -137,6 +173,14 @@ public class ComposeFragment extends Fragment {
                 }
             }
         });
+    }
+
+    public static ParseFile getParseFile(Bitmap bitmap) {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 50, stream);
+        byte[] image = stream.toByteArray();
+
+        return new ParseFile(image);
     }
 
 }

@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import jp.wasabeef.recyclerview.animators.SlideInUpAnimator;
 import model.Post;
 
 public class PostsFragment extends Fragment {
@@ -50,7 +49,6 @@ public class PostsFragment extends Fragment {
         adapter = new PostsAdapter(getContext(), mPosts);
         RecyclerView.ItemDecoration itemDecoration = new DividerItemDecoration(getContext(), DividerItemDecoration.VERTICAL);
         rvPosts.addItemDecoration(itemDecoration);
-        rvPosts.setItemAnimator(new SlideInUpAnimator());
         rvPosts.setAdapter(adapter);
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getContext());
         rvPosts.setLayoutManager(linearLayoutManager);

@@ -8,6 +8,8 @@ import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
 
+import org.json.JSONArray;
+
 import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -19,7 +21,17 @@ public class Post extends ParseObject implements Serializable {
     public static final String KEY_IMAGE = "image";
     public static final String KEY_USER = "user";
     public static final String KEY_CREATED_AT = "createdAt";
-    public static final String KEY_LIKE_COUNT = "likeCount";
+    public static final String KEY_USERS_WHO_LIKED = "usersWhoLiked";
+
+    public boolean likedByUser = false;
+    public Integer likes = 0;
+
+    public void setLikedByUser(boolean liked) {
+        likedByUser = liked;
+    }
+    public void setLikeCount(Integer likes) {
+        this.likes = likes;
+    }
 
     public String getDescription() {
         return getString(KEY_DESCRIPTION);
@@ -45,11 +57,9 @@ public class Post extends ParseObject implements Serializable {
 
     public String getTimestamp() { return getRelativeTimeAgo(getCreatedAt().toString()); }
 
-    public Number getLikeCount() { return getNumber(KEY_LIKE_COUNT); }
+    public JSONArray getUsersWhoLiked() { return getJSONArray(KEY_USERS_WHO_LIKED); }
 
-    public void setLikeCount(Number likeCount) {
-        put(KEY_LIKE_COUNT, likeCount);
-    }
+    public void setUsersWhoLiked(ParseUser user) { put(KEY_USERS_WHO_LIKED, user); }
 
     public static class Query extends ParseQuery {
         public Query() {

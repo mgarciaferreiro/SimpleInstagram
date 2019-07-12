@@ -22,9 +22,10 @@ import com.bumptech.glide.load.resource.bitmap.CenterCrop;
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
 import com.bumptech.glide.request.RequestOptions;
 import com.example.simpleinstagram.fragments.ProfileFragment;
+import com.parse.DeleteCallback;
+import com.parse.FindCallback;
 import com.parse.ParseException;
 import com.parse.ParseFile;
-import com.parse.ParseRelation;
 import com.parse.ParseUser;
 import com.parse.SaveCallback;
 
@@ -32,6 +33,7 @@ import org.parceler.Parcels;
 
 import java.util.List;
 
+import model.Like;
 import model.Post;
 
 public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> {
@@ -90,19 +92,8 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
         tvCaption.setText(Html.fromHtml(sourceString));
         tvUser.setText(post.getUser().getUsername());
         timestamp.setText(post.getTimestamp());
-        tvLikeCount.setText(post.getLikeCount().toString());
 
-        if (post.getLikeCount() != null) {
-            tvLikeCount.setText(post.getLikeCount().toString() + " likes");
-        }
-
-        if (isLikedByUser(post, ParseUser.getCurrentUser())) {
-            heartButton.setBackgroundResource(R.drawable.ufi_heart_active);
-        } else {
-            heartButton.setBackgroundResource(R.drawable.ufi_heart);
-        }
-
-        imageView.setOnClickListener(new View.OnClickListener() {
+        commentButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(context, DetailActivity.class);
@@ -121,43 +112,25 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
                 ((AppCompatActivity) context).getSupportFragmentManager().beginTransaction().replace(R.id.flContainer, profileFragment).commit();
             }
         });
+        Log.i("PostsAdapter", post.getDescription() + " " + post.likes + " likes");
+        Log.i("PostsAdapter", post.getDescription() + " liked by user " + post.likedByUser);
+        tvLikeCount.setText(post.likes + " likes");
+
+        if (post.likedByUser) {
+            heartButton.setBackgroundResource(R.drawable.ufi_heart_active);
+        } else {
+            heartButton.setBackgroundResource(R.drawable.ufi_heart_icon);
+        }
+
+        queryLikes(post);
 
         heartButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (isLikedByUser(post, user)) {
-                    post.increment(Post.KEY_LIKE_COUNT, -1);
-                    post.getRelation("usersWhoLiked").remove(user);
-                    //user.getRelation("likedPosts").remove(post);
-                    post.saveInBackground(new SaveCallback() {
-                        @Override
-                        public void done(ParseException e) {
-                            if (e == null) {
-                                Log.d("PostsAdapter", "Unlike post success");
-                                notifyItemChanged(position);
-                            } else {
-                                Log.d("PostsAdapter", "Unlike post failure");
-                                e.printStackTrace();
-                            }
-                        }
-                    });
+                if (post.likedByUser) {
+                    setUnliked(post);
                 } else {
-                    post.increment(Post.KEY_LIKE_COUNT, 1);
-                    post.getRelation("usersWhoLiked").add(user);
-                    //user.getRelation("likedPosts").add(post);
-                    post.saveInBackground(new SaveCallback() {
-                        @Override
-                        public void done(ParseException e) {
-                            if (e == null) {
-                                Log.d("PostsAdapter", "Like post success");
-                                //notifyItemChanged(holder.getLayoutPosition());
-                                notifyDataSetChanged();
-                            } else {
-                                Log.d("PostsAdapter", "Like post failure");
-                                e.printStackTrace();
-                            }
-                        }
-                    });
+                    setLiked(post);
                 }
             }
         });
@@ -182,15 +155,74 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
         }
     }
 
-    private boolean isLikedByUser(Post post, ParseUser user) {
-        ParseRelation relation = post.getRelation("usersWhoLiked");
-        try {
-            Log.i("PostsAdapter", post.getDescription() + "is liked by user" + user.getUsername() + relation.getQuery().find().contains(user));
-            return relation.getQuery().find().contains(user);
-        } catch (ParseException e) {
-            e.printStackTrace();
-            return false;
-        }
+    private void setLiked(final Post post) {
+        post.setLikedByUser(true);
+        post.setLikeCount(post.likes++);
+        final Like like = new Like();
+        like.setPost(post);
+        like.setUser(ParseUser.getCurrentUser());
+        like.saveInBackground(new SaveCallback() {
+            @Override
+            public void done(ParseException e) {
+                if (e == null) {
+                    Log.i("PostsAdapter", post.getDescription() + " liked");
+                    queryLikes(post);
+                } else {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    private void setUnliked(final Post post) {
+        post.setLikedByUser(false);
+        post.setLikeCount(post.likes--);
+        notifyDataSetChanged();
+        final Like.Query likeQuery = new Like.Query();
+        likeQuery.forPost(post).forUser(ParseUser.getCurrentUser());
+        likeQuery.findInBackground(new FindCallback<Like>() {
+            @Override
+            public void done(List<Like> objects, ParseException e) {
+                if (e == null) {
+                    if (objects.size() > 0) {
+                        objects.get(0).deleteInBackground(new DeleteCallback() {
+                            @Override
+                            public void done(ParseException e) {
+                                if (e == null) {
+                                    Log.i("PostsAdapter", post.getDescription() + " unliked");
+                                    queryLikes(post);
+                                } else {
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
+                    }
+                } else {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    public void queryLikes(final Post post) {
+        final Like.Query likeQuery = new Like.Query();
+        likeQuery.forPost(post);
+        likeQuery.findInBackground(new FindCallback<Like>() {
+            @Override
+            public void done(List<Like> objects, ParseException e) {
+                if (e == null) {
+                    post.setLikeCount(objects.size());
+                    for (int i = 0; i < objects.size(); i++) {
+                        if (objects.get(i).getUser().getObjectId().equals(ParseUser.getCurrentUser().getObjectId())) {
+                            post.setLikedByUser(true);
+                        }
+                    }
+                    //notifyDataSetChanged();
+                } else {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     // Clean all elements of the recycler
