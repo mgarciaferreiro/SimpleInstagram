@@ -4,6 +4,18 @@
 
 Time spent: **X** hours spent in total
 
+## Highlight of project: comments
+
+- DetailActivity: has a recycler view that contains the comments on the post that's passed through the intent (can be reached by clicking on a post from a profile or from the feed) 
+    - The queryComments method in DetailActivity queries the comments for that post in order of date created from the Parse server. 
+    - The recycler view is contained in a SwipeRefreshLayout so you can swipe down to refresh the comments.
+    - EditText and Comment button: can type comment and the button has an onclick listener so the comment is saved on the server and the adapter is notified.
+
+- CommentsAdapter: adapts each InstaComment to a cell in the recycler view, setting the profile picture of the user, handle, timestamp, and text. 
+
+- InstaComment: this class extends ParseObject, and has methods to query for a certain post and getters and setters for the comment text, post, user and timestamp.
+
+
 ## User Stories
 
 The following **required** functionality is completed:
